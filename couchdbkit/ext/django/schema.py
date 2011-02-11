@@ -27,7 +27,8 @@ string_concat
 from django.utils.encoding import force_unicode
 
 from couchdbkit import schema
-from couchdbkit.ext.django.loading import get_schema, register_schema
+from couchdbkit.ext.django.loading import get_schema, register_schema, \
+get_db
 
 __all__ = ['Property', 'StringProperty', 'IntegerProperty', 
             'DecimalProperty', 'BooleanProperty', 'FloatProperty', 
@@ -36,7 +37,7 @@ __all__ = ['Property', 'StringProperty', 'IntegerProperty',
             'value_to_python', 'dict_to_python', 'list_to_python', 
             'convert_property', 'DocumentSchema', 'Document', 
             'SchemaProperty', 'SchemaListProperty', 'ListProperty', 
-            'DictProperty', 'StringListProperty']
+            'DictProperty', 'StringListProperty', 'SchemaDictProperty']
             
 
 DEFAULT_NAMES = ('verbose_name', 'db_table', 'ordering',
@@ -143,7 +144,15 @@ class Document(schema.Document):
     
     get_id = property(lambda self: self['_id'])
     get_rev = property(lambda self: self['_rev'])
-    
+
+    @classmethod
+    def get_db(cls):
+        db = getattr(cls, '_db', None)
+        if db is None:
+            app_label = getattr(cls._meta, "app_label")
+            db = get_db(app_label)
+            cls._db = db
+        return db
     
 DocumentSchema = schema.DocumentSchema    
 
@@ -162,6 +171,7 @@ SchemaListProperty = schema.SchemaListProperty
 ListProperty = schema.ListProperty
 DictProperty = schema.DictProperty
 StringListProperty = schema.StringListProperty
+SchemaDictProperty = schema.SchemaDictProperty
 
 
 

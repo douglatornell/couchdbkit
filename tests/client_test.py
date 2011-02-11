@@ -13,13 +13,11 @@ ResourceConflict
 
 from couchdbkit import *
 
-from restkit import SimplePool
-pool = SimplePool()
 
 class ClientServerTestCase(unittest.TestCase):
     def setUp(self):
         self.couchdb = CouchdbResource()
-        self.Server = Server(pool_instance=pool)
+        self.Server = Server()
         
     def tearDown(self):
         try:
@@ -27,7 +25,6 @@ class ClientServerTestCase(unittest.TestCase):
             del self.Server['couchdbkit/test']
         except:
             pass
-        self.Server.close()
 
     def testGetInfo(self):
         info = self.Server.info()
@@ -57,9 +54,14 @@ class ClientServerTestCase(unittest.TestCase):
         self.assert_(db.dbname == gocdb.dbname)
         self.Server.delete_db("get_or_create_db")
         
-    def testBadResourceClassType(self):
-        self.assertRaises(TypeError, Server, resource_class=None)
-        
+
+    def testCreateInvalidDbName(self):
+
+        def create_invalid():
+            res = self.Server.create_db('123ab')
+
+        self.assertRaises(ValueError, create_invalid) 
+    
     def testServerLen(self):
         res = self.Server.create_db('couchdbkit_test')
         self.assert_(len(self.Server) >= 1)
@@ -785,6 +787,47 @@ class ClientViewTestCase(unittest.TestCase):
         del self.Server['couchdbkit_test']
 
         
+    def testMultiWrap(self):
+        """
+        Tests wrapping of view results to multiple
+        classes using the client
+        """
+
+        class A(Document):
+            pass
+        class B(Document):
+            pass
+
+        design_doc = {
+            '_id': '_design/test',
+            'language': 'javascript',
+            'views': {
+                'all': {
+                    "map": """function(doc) { emit(doc._id, doc); }"""
+                }
+            }
+        }
+        a = A()
+        a._id = "1"
+        b = B()
+        b._id = "2"
+        db = self.Server.create_db('couchdbkit_test')
+        A._db = db
+        B._db = db
+
+        a.save()
+        b.save()
+        db.save_doc(design_doc)
+        # provide classes as a list
+        results = list(db.view('test/all', schema=[A, B]))
+        self.assert_(results[0].__class__ == A)
+        self.assert_(results[1].__class__ == B)
+        # provide classes as a dict
+        results = list(db.view('test/all', schema={'A': A, 'B': B}))
+        self.assert_(results[0].__class__ == A)
+        self.assert_(results[1].__class__ == B)
+        self.Server.delete_db('couchdbkit_test')
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -26,34 +26,26 @@ import sys
 import time
 import types
 
-import anyjson
 
-from restkit import Resource, HttpResponse
+from restkit import Resource, ClientResponse
 from restkit.errors import ResourceError, RequestFailed, RequestError
 from restkit.util import url_quote
   
 from couchdbkit import __version__
+from couchdbkit.exceptions import ResourceNotFound, ResourceConflict, \
+PreconditionFailed
+from couchdbkit.utils import json
 
 USER_AGENT = 'couchdbkit/%s' % __version__
 
-class ResourceNotFound(ResourceError):
-    """ Exception raised when resource is not found"""
-
-class ResourceConflict(ResourceError):
-    """ Exception raised when there is conflict while updating"""
-
-class PreconditionFailed(ResourceError):
-    """ Exception raised when 412 HTTP error is received in response
-    to a request """
-
 RequestFailed = RequestFailed
 
-class CouchDBResponse(HttpResponse):
+class CouchDBResponse(ClientResponse):
     
     @property
     def json_body(self):
         try:
-            return anyjson.deserialize(self.body_string())
+            return json.loads(self.body_string())
         except ValueError:
             return self.body_string()
 
@@ -109,28 +101,23 @@ class CouchdbResource(Resource):
         headers.setdefault('Accept', 'application/json')
         headers.setdefault('User-Agent', USER_AGENT)
 
-        body = None
         if payload is not None:
             #TODO: handle case we want to put in payload json file.
             if not hasattr(payload, 'read') and not isinstance(payload, basestring):
-                body = anyjson.serialize(payload).encode('utf-8')
+                payload = json.dumps(payload).encode('utf-8')
                 headers.setdefault('Content-Type', 'application/json')
-            else:
-                body = payload
 
         params = encode_params(params)
-        
         try:
             resp = Resource.request(self, method, path=path,
-                             payload=body, headers=headers, **params)
+                             payload=payload, headers=headers, **params)
                              
         except ResourceError, e:
             msg = getattr(e, 'msg', '')
-            
             if e.response and msg:
                 if e.response.headers.get('content-type') == 'application/json':
                     try:
-                        msg = anyjson.deserialize(msg)
+                        msg = json.loads(msg)
                     except ValueError:
                         pass
                     
@@ -161,12 +148,12 @@ def encode_params(params):
     _params = {}
     if params:
         for name, value in params.items():
-            if value is None:
+            if name in ('key', 'startkey', 'endkey'):
+                value = json.dumps(value)
+            elif value is None:
                 continue
-            
-            if name in ('key', 'startkey', 'endkey') \
-                    or not isinstance(value, basestring):
-                value = anyjson.serialize(value)
+            elif not isinstance(value, basestring):
+                value = json.dumps(value)
             _params[name] = value
     return _params
 

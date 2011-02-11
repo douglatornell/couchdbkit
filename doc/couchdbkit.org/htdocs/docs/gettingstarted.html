@@ -81,8 +81,7 @@
 	<p>If you have not installed couchdbkit yet, follow instructions on <a href="/download.html">download page</a> . Once you&#8217;ve done, you can write your first CouchDB document:</p>
 
 	<p><pre class="code prettyprint">
- import datetime
- from restkit import SimplePool</p>
+ import datetime</p>
 
  from couchdbkit import *
 
@@ -98,11 +97,8 @@
 
 	<p><pre class="code prettyprint"></p>
 
- # set a threadsafe pool to keep 2 connections alives
- pool = SimplePool(keepalive=2)
-
  # server object
- server = Server(pool_instance=pool)
+ server = Server()
 
  # create database
  db = server.get_or_create_db(&#8220;greeting&#8221;)
@@ -121,7 +117,7 @@
  greet.save()
 </pre>
 
-	<p>Note: Here we use `contain` to associate the db to the <code>Greeting</code> object. This function could be use to associate myltiple dcouemnt objects to one db : <code>contain(db, Doc1, ...)</code> </p>
+	<p>Note: You can just use the <code>db.save</code> method to save any <code>Greeting</code> object.  </p>
 
 	<p>Your document `greet` is now in the `greetings` db. Each document is saved with a `doc_type` field that allow you to find easily each kind of document with the views. By default `doc_type` is the name of the class.</p>
 
@@ -173,10 +169,9 @@
 	<p>Then we use `FileSystemDocsLoader` object to send the design document to CouchDB:</p>
 
 	<p><pre class="code prettyprint">
- from couchdbkit.loaders import FileSystemDocsLoader</p>
+ from couchdbkit.designer import push</p>
 
- loader = FileSystemDocsLoader(&#8217;/path/to/example/_design&#8217;)
- loader.sync(db, verbose=True)
+ push(&#8217;/path/to/example/_design/greeting&#8217;, db)
 </pre>
 
 	<p>The design doc is now in the `greetings` database and you can get all greets :</p>

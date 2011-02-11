@@ -15,14 +15,19 @@ class ClientServerTestCase(unittest.TestCase):
     
     def setUp(self):
         self.server = Server()
+        self._delete_db()
         self.db = self.server.create_db("couchdbkit_test")
         self.consumer = Consumer(self.db)
-        
+
     def tearDown(self):
+        self._delete_db()
+        
+    def _delete_db(self):
         try:
             del self.server['couchdbkit_test']
         except:
             pass
+
       
     def test_fetch(self):
         res1 = self.consumer.fetch()
@@ -42,9 +47,10 @@ class ClientServerTestCase(unittest.TestCase):
         def test_line(line):
             self.assert_(line["last_seq"] == 1)
             self.assert_(len(line["results"]) == 1)
+            return
             
-        self.consumer.register_callback(test_line)
-        t =  threading.Thread(target=self.consumer.wait_once)
+        t =  threading.Thread(target=self.consumer.wait_once,
+                kwargs=dict(cb=test_line))
         t.daemon = True
         t.start()
         doc = {}
@@ -55,8 +61,8 @@ class ClientServerTestCase(unittest.TestCase):
         def test_line(line):
             self.lines.append(line)
             
-        self.consumer.register_callback(test_line)
-        t =  threading.Thread(target=self.consumer.wait)
+        t =  threading.Thread(target=self.consumer.wait,
+                kwargs=dict(cb=test_line))
         t.daemon = True
         t.start()
         
@@ -72,6 +78,7 @@ class ClientServerTestCase(unittest.TestCase):
         time.sleep(0.5)
         self.assert_(len(self.lines) == 6)
         self.assert_(self.lines[5]["id"] == "test5")
+
         
 if __name__ == '__main__':
     unittest.main()

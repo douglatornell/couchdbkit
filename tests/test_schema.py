@@ -12,13 +12,10 @@ import unittest
 from couchdbkit import *
 
 
-from restkit import SimplePool
-pool = SimplePool()
-
 
 class DocumentTestCase(unittest.TestCase):
     def setUp(self):
-        self.server = Server(pool_instance=pool)
+        self.server = Server()
 
     def tearDown(self):
         try:
@@ -64,6 +61,10 @@ class DocumentTestCase(unittest.TestCase):
         doc.save()
         self.assert_(not hasattr(doc, "bar"))
         self.assert_(doc._doc['foo'] == "test")
+
+        doc1 = Test(foo="doc1")
+        db.save_doc(doc1)
+        self.assert_(doc1._doc['foo'] == "doc1")
 
         self.server.delete_db('couchdbkit_test')
 
@@ -144,6 +145,10 @@ class DocumentTestCase(unittest.TestCase):
         doc3 = db.get(doc2._id)
         self.assert_(doc3['string3'] == "test")
 
+        doc4 = Test(string="doc4")
+        db.save_doc(doc4)
+        self.assert_(doc4._id is not None)
+
         self.server.delete_db('couchdbkit_test')
 
     def testBulkSave(self):
@@ -184,6 +189,16 @@ class DocumentTestCase(unittest.TestCase):
         self.assert_(doc2.string == "test2")
         self.assert_(doc3.string == "test3")
 
+        doc4 = Test(string="doc4")
+        doc5 = Test(string="doc5")
+        db.save_docs([doc4, doc5])
+        self.assert_(doc4._id is not None)
+        self.assert_(doc4._rev is not None)
+        self.assert_(doc5._id is not None)
+        self.assert_(doc5._rev is not None)
+        self.assert_(doc4.string == "doc4")
+        self.assert_(doc5.string == "doc5")
+    
         self.server.delete_db('couchdbkit_test')
 
  
@@ -205,7 +220,11 @@ class DocumentTestCase(unittest.TestCase):
         doc2.string3 = "blah"
         doc2.save()
         doc3 = db.get(doc2._id)
-        self.assert_(doc3)
+        self.assert_(doc3['string3'] == "blah")
+
+        doc4 = db.open_doc(doc2._id, schema=Test)
+        self.assert_(isinstance(doc4, Test) == True)
+        self.assert_(doc4.string3 == "blah")
 
         self.server.delete_db('couchdbkit_test')
 
@@ -320,6 +339,49 @@ class DocumentTestCase(unittest.TestCase):
         doc3 = list(results)[0]
         self.assert_(hasattr(doc3, "field1"))
         self.server.delete_db('couchdbkit_test')
+
+    def testMultiWrap(self):
+        """
+        Tests wrapping of view results to multiple
+        classes using a Document class' wrap method
+        """
+
+        class A(Document):
+            pass
+        class B(Document):
+            pass
+
+        design_doc = {
+            '_id': '_design/test',
+            'language': 'javascript',
+            'views': {
+                'all': {
+                    "map": """function(doc) { emit(doc._id, doc); }"""
+                }
+            }
+        }
+        a = A()
+        a._id = "1"
+        b = B()
+        b._id = "2"
+
+        db = self.server.create_db('couchdbkit_test')
+        A._db = db
+        B._db = db
+
+        a.save()
+        b.save()
+        db.save_doc(design_doc)
+        # provide classes as a list
+        results = list(A.view('test/all', classes=[A, B]))
+        self.assert_(results[0].__class__ == A)
+        self.assert_(results[1].__class__ == B)
+        # provide classes as a dict
+        results = list(A.view('test/all', classes={'A': A, 'B': B}))
+        self.assert_(results[0].__class__ == A)
+        self.assert_(results[1].__class__ == B)
+        self.server.delete_db('couchdbkit_test')
+
     
     def testViewNoneValue(self):
         class TestDoc(Document):
@@ -515,7 +577,7 @@ class DocumentTestCase(unittest.TestCase):
 class PropertyTestCase(unittest.TestCase):
 
     def setUp(self):
-        self.server = Server(pool_instance=pool)
+        self.server = Server()
         try:
             self.db = self.server.create_db('couchdbkit_test')
         except: 
@@ -537,6 +599,15 @@ class PropertyTestCase(unittest.TestCase):
         def ftest():
             test.string = ""
         self.assertRaises(BadValueError, test.save)
+
+    def testRequiredBoolean(self):
+        class Test(Document):
+            boolean = BooleanProperty(required=True)
+        Test._db = self.db
+
+        test = Test()
+        test.boolean = False
+        test.save()
 
     def testValidator(self):
         def test_validator(value):
@@ -707,7 +778,23 @@ class PropertyTestCase(unittest.TestCase):
             pass
         b1.b.name = u"test"
 
+    def testSchemaProperty2(self):
+        class DocOne(Document):
+            name = StringProperty()
 
+        class DocTwo(Document):
+            name = StringProperty()
+            one = SchemaProperty(DocOne())
+
+        class DocThree(Document):
+            name = StringProperty()
+            two = SchemaProperty(DocTwo())
+
+        one = DocOne(name='one')
+        two = DocTwo(name='two', one=one)
+        three = DocThree(name='three', two=two)
+        self.assert_(three.two.one.name == 'one')
+        
     def testSchemaWithPythonTypes(self):
         class A(Document):
             c = unicode()
@@ -870,6 +957,35 @@ class PropertyTestCase(unittest.TestCase):
         self.assert_(len(b1.slm) == 2)
         self.assert_(b1.slm[0].s == "test")
         
+
+    def testSchemaDictProperty(self):
+        class A(DocumentSchema):
+            i = IntegerProperty()
+
+        class B(Document):
+            d = SchemaDictProperty(A)
+
+        a1 = A()
+        a1.i = 123
+        self.assert_(a1._doc == {'i': 123, 'doc_type': 'A'})
+
+        a2 = A()
+        a2.i = 42
+        self.assert_(a2._doc == {'i': 42, 'doc_type': 'A'})
+
+        b = B()
+        b.d['v1'] = a1
+        b.d[23]   = a2
+        self.assert_(b._doc == {'doc_type': 'B', 'd': {"v1": {'i': 123, 'doc_type': 'A'}, '23': {'i': 42, 'doc_type': 'A'}}})
+
+        b.set_db(self.db)
+        b.save()
+
+        b1 = B.get(b._id)
+        self.assert_(len(b1.d) == 2)
+        self.assert_(b1.d['v1'].i == 123)
+        self.assert_(b1.d[23].i == 42)
+
 
     def testListProperty(self):
         from datetime import datetime

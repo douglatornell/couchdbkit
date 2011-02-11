@@ -20,9 +20,22 @@ import os
 import re
 import sys
 import time
+import urllib
 
 
-import anyjson
+try:
+    import json
+except ImportError:
+    try:
+        import simplejson as json
+    except ImportError:
+        raise ImportError("""simplejson isn't installed
+
+Install it with the command:
+
+    pip install simplejson
+""")
+ 
 
 # backport relpath from python2.6
 if not hasattr(os.path, 'relpath'):
@@ -94,13 +107,21 @@ if not hasattr(os.path, 'relpath'):
 else:
     relpath = os.path.relpath
 
-VALID_DB_NAME = re.compile(r'^[a-z0-9_$()+-/]+$')
+def split_path(path):
+    parts = []
+    while True:
+        head, tail = os.path.split(path)
+        parts = [tail] + parts
+        path = head
+        if not path: break
+    return parts
+
+VALID_DB_NAME = re.compile(r'^[a-z][a-z0-9_$()+-/]*$')
 def validate_dbname(name):
     """ validate dbname """
-    if not VALID_DB_NAME.match(name):
-        raise ValueError('Invalid database name')
-    return name
-    
+    if not VALID_DB_NAME.match(urllib.unquote(name)):
+        raise ValueError("Invalid db name: '%s'" % name)
+
 def to_bytestring(s):
     """ convert to bytestring an unicode """
     if not isinstance(s, basestring):
@@ -153,7 +174,7 @@ def write_json(filename, content):
     :attr content: string
     
     """
-    write_content(filename, anyjson.serialize(content))
+    write_content(filename, json.dumps(content))
 
 def read_json(filename, use_environment=False):
     """ read a json file and deserialize
@@ -176,8 +197,10 @@ def read_json(filename, use_environment=False):
         data = string.Template(data).substitute(os.environ)
 
     try:
-        data = anyjson.deserialize(data)
+        data = json.loads(data)
     except ValueError:
         print >>sys.stderr, "Json is invalid, can't load %s" % filename
         raise
     return data
+
+
