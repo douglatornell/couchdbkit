@@ -21,20 +21,15 @@ Example:
 """
 import base64
 import re
-import socket
-import sys
-import time
-import types
-
 
 from restkit import Resource, ClientResponse
 from restkit.errors import ResourceError, RequestFailed, RequestError
 from restkit.util import url_quote
   
-from couchdbkit import __version__
-from couchdbkit.exceptions import ResourceNotFound, ResourceConflict, \
+from . import __version__
+from .exceptions import ResourceNotFound, ResourceConflict, \
 PreconditionFailed
-from couchdbkit.utils import json
+from .utils import json
 
 USER_AGENT = 'couchdbkit/%s' % __version__
 
@@ -138,8 +133,8 @@ class CouchdbResource(Resource):
                         response=e.response)
             else:
                 raise
-        except Exception, e:
-            raise RequestFailed(str(e))
+        except: 
+            raise 
         
         return resp
 

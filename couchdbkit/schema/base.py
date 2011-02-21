@@ -7,18 +7,13 @@
 to map CouchDB document in Python statically, dynamically or both
 """
 
-import datetime
-import decimal
-import re
-import warnings
 
-from couchdbkit.client import Database
-from couchdbkit.schema import properties as p
-from couchdbkit.schema.properties import value_to_python, \
+from . import properties as p
+from .properties import value_to_python, \
 convert_property, MAP_TYPES_PROPERTIES, ALLOWED_PROPERTY_TYPES, \
-LazyDict, LazyList, value_to_json
-from couchdbkit.exceptions import *
-from couchdbkit.resource import ResourceNotFound
+LazyDict, LazyList
+from ..exceptions import DuplicatePropertyError, ResourceNotFound, \
+ReservedWordError 
 
 
 __all__ = ['ReservedWordError', 'ALLOWED_PROPERTY_TYPES', 'DocumentSchema',
@@ -172,6 +167,8 @@ class DocumentSchema(object):
 
         if key == "_id" and valid_id(value):
             self._doc['_id'] = value
+        elif key == "_deleted":
+            self._doc["_deleted"] = value
         else:
             check_reserved_words(key)
             if not hasattr( self, key ) and not self._allow_dynamic_properties:
@@ -238,9 +235,9 @@ class DocumentSchema(object):
         try:
             attr = getattr(self, key)
             if callable(attr):
-                raise AttributeError
+                raise AttributeError("existing instance method")
             return attr
-        except AttributeError, e:
+        except AttributeError:
             if key in self._doc:
                 return self._doc[key]
             raise
@@ -354,7 +351,6 @@ class DocumentSchema(object):
     @classmethod
     def build(cls, **kwargs):
         """ build a new instance from this document object. """
-        obj = cls()
         properties = {}
         for attr_name, attr in kwargs.items():
             if isinstance(attr, (p.Property,)):
@@ -368,7 +364,7 @@ class DocumentSchema(object):
                 prop = MAP_TYPES_PROPERTIES[type(attr)](default=attr)
                 properties[attr_name] = prop
                 prop.__property_config__(cls, attr_name)
-                attrs[attr_name] = prop
+                properties[attr_name] = prop
         return type('AnonymousSchema', (cls,), properties)
 
 class DocumentBase(DocumentSchema):

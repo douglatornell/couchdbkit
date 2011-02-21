@@ -5,13 +5,8 @@
 
 from __future__ import with_statement
 
-import asyncore
-import asynchat
-import socket
-import sys
-
-from couchdbkit.consumer.base import ConsumerBase, check_callable
-from couchdbkit.utils import json
+from .base import ConsumerBase, check_callable
+from ..utils import json
 
 __all__ = ['SyncConsumer']
 

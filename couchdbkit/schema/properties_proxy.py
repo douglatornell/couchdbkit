@@ -5,16 +5,11 @@
 
 """ Meta properties """
 
-from calendar import timegm
-import datetime
-import decimal
-import time
 
-import couchdbkit
-from couchdbkit.exceptions import *
-from couchdbkit.schema.properties import Property
+from ..exceptions import BadValueError 
 
-from couchdbkit.schema.base import DocumentSchema, ALLOWED_PROPERTY_TYPES
+from .base import DocumentSchema
+from .properties import Property
 
 __all__ = ['SchemaProperty', 'SchemaListProperty', 'SchemaDictProperty']
 
@@ -219,7 +214,6 @@ class LazySchemaList(list):
         else:
             value = kwargs
 
-        index = len(self)
         self.doc.append(svalue_to_json(value, self.schema, 
                                     self.use_instance))
         super(LazySchemaList, self).append(value)

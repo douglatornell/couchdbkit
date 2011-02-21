@@ -3,16 +3,15 @@
 # This file is part of couchdbkit released under the MIT license. 
 # See the NOTICE for more information.
 
-import re
 import sys
 import StringIO
 import traceback
 from urllib import unquote
 
-from restkit.utils import url_encode
+from restkit.util import url_encode
 
-from couchdbkit import __version__
-from couchdbkit.external import External
+from .. import __version__
+from ..external import External
 
 def _normalize_name(name):
     return  "-".join([w.lower().capitalize() for w in name.split("-")])

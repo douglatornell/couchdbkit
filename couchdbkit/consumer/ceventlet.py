@@ -6,12 +6,11 @@
 import traceback
 
 import eventlet
-from eventlet.greenthread import GreenThread
 from eventlet import event
 
-from couchdbkit.consumer.base import check_callable
-from couchdbkit.consumer.sync import SyncConsumer
-from couchdbkit.utils import json
+from .base import check_callable
+from .sync import SyncConsumer
+from ..utils import json
 
 
 class ChangeConsumer(object):
@@ -22,11 +21,11 @@ class ChangeConsumer(object):
         self.stop_event = event.Event()
 
     def wait(self):
-        _ = eventlet.spawn_n(self._run)
+        eventlet.spawn_n(self._run)
         self.stop_event.wait()
 
     def wait_async(self):
-        _ = eventlet.spawn_n(self._run)
+        eventlet.spawn_n(self._run)
 
     def _run(self):
         while True:
