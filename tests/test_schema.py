@@ -1136,6 +1136,41 @@ class PropertyTestCase(unittest.TestCase):
             'l': [d1.strftime(fstring), d2.strftime(fstring)]
         })
 
+
+    def testListPropertyPop(self):
+        """list pop method for property w/o type
+        """
+        class A(Document):
+            l = ListProperty()
+
+        a = A()
+        a.l = [42, 24, 4224]
+        v = a.l.pop()
+        self.assert_(v == 4224)
+        self.assert_(a.l == [42, 24])
+        self.assert_(a._doc == {'doc_type': 'A', 'l': [42, 24]})
+        v = a.l.pop(0)
+        self.assert_(v == 42)
+        self.assert_(a.l == [24])
+        self.assert_(a._doc == {'doc_type': 'A', 'l': [24]})
+
+
+    def testListPropertyPopWithType(self):
+        """list pop method for property w/ type
+        """
+        from datetime import datetime
+        class A(Document):
+            l = ListProperty(item_type=datetime)
+
+        a = A()
+        d1 = datetime(2011, 3, 11, 21, 31, 1)
+        d2 = datetime(2011, 11, 3, 13, 12, 2)
+        d3 = datetime(2010, 1, 12, 3, 2, 3)
+        a.l = [d1, d2, d3]
+        v = a.l.pop()
+        self.assertEqual(v, d3)
+        self.assertEqual(a.l, [d1, d2])
+
          
     def testDictProperty(self):
         from datetime import datetime
@@ -1387,16 +1422,6 @@ class PropertyTestCase(unittest.TestCase):
         b.d = {}
         self.assert_(b.d == {})
         self.assert_(b.to_json()['d'] == {})
-
-
-class SchemaUtilitiesTestCase (unittest.TestCase):
-    """Unit tests for schema properties utility functions.
-    """
-    def test_value_to_python_date(self):
-        from datetime import date
-        d1 = date(2011, 2, 13)
-        value = value_to_python(d1.strftime('%Y-%m-%d'), date)
-        self.assertEqual(value, d1)
 
         
 if __name__ == '__main__':

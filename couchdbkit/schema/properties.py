@@ -679,6 +679,11 @@ class LazyList(list):
         x = value_to_json(x, item_type=self.item_type)
         return self.doc.index(x)
 
+    def pop(self, i=-1):
+        del self.doc[i]
+        v = super(LazyList, self).pop(i)
+        return value_to_python(v, item_type=self.item_type)
+
     def remove(self, x):
         del self[self.index(x)]
 
