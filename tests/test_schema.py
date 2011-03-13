@@ -7,7 +7,10 @@ __author__ = 'benoitc@e-engura.com (Benoît Chesneau)'
 
 import datetime
 import decimal
-import unittest
+try:
+    import unittest2 as unittest
+except ImportError:
+    import unittest
 
 from couchdbkit import *
 
@@ -1047,7 +1050,6 @@ class PropertyTestCase(unittest.TestCase):
         self.assert_(b.l == [])
         self.assert_(b.to_json()['l'] == [])
         
-       
         
     def testListPropertyNotEmpty(self):
         from datetime import datetime
@@ -1076,7 +1078,8 @@ class PropertyTestCase(unittest.TestCase):
         a2 = A2()            
         self.assertTrue(a2.validate(required=False))
         self.assertTrue(a2.validate())
-    
+
+
     def testListPropertyWithType(self):
         from datetime import datetime
         class A(Document):
@@ -1101,6 +1104,37 @@ class PropertyTestCase(unittest.TestCase):
         self.assert_(b1.ls.index(u'hello') == 0)
         b1.ls.remove(u'hello')
         self.assert_(u'hello' not in b1.ls)
+
+
+    def testListPropertyExtend(self):
+        """list extend method for property w/o type
+        """
+        class A(Document):
+            l = ListProperty()
+
+        a = A()
+        a.l.extend([42, 24])
+        self.assert_(a.l == [42, 24])
+        self.assert_(a._doc == {'doc_type': 'A', 'l': [42, 24]})
+
+
+    def testListPropertyExtendWithType(self):
+        """list extend method for property w/ type
+        """
+        from datetime import datetime
+        class A(Document):
+            l = ListProperty(item_type=datetime)
+
+        a = A()
+        d1 = datetime(2011, 3, 11, 21, 31, 1)
+        d2 = datetime(2011, 11, 3, 13, 12, 2)
+        a.l.extend([d1, d2])
+        self.assert_(a.l == [d1, d2])
+        fstring = '%Y-%m-%dT%H:%M:%SZ'
+        self.assert_(a._doc == {
+            'doc_type': 'A',
+            'l': [d1.strftime(fstring), d2.strftime(fstring)]
+        })
 
          
     def testDictProperty(self):
@@ -1353,6 +1387,17 @@ class PropertyTestCase(unittest.TestCase):
         b.d = {}
         self.assert_(b.d == {})
         self.assert_(b.to_json()['d'] == {})
+
+
+class SchemaUtilitiesTestCase (unittest.TestCase):
+    """Unit tests for schema properties utility functions.
+    """
+    def test_value_to_python_date(self):
+        from datetime import date
+        d1 = date(2011, 2, 13)
+        value = value_to_python(d1.strftime('%Y-%m-%d'), date)
+        self.assertEqual(value, d1)
+
         
 if __name__ == '__main__':
     unittest.main()

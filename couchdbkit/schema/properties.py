@@ -670,6 +670,11 @@ class LazyList(list):
             self.doc.append(value_to_json(value, item_type=self.item_type))
         super(LazyList, self).append(value)
 
+    def extend(self, x):
+        self.doc.extend(
+            [value_to_json(v, item_type=self.item_type) for v in x])
+        super(LazyList, self).extend(x)
+
     def index(self, x, *args):
         x = value_to_json(x, item_type=self.item_type)
         return self.doc.index(x)
