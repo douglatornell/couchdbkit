@@ -976,6 +976,43 @@ class PropertyTestCase(unittest.TestCase):
         b1 = B.get(b._id)
         self.assert_(len(b1.slm) == 2)
         self.assert_(b1.slm[0].s == "test")
+
+
+    def testSchemaListPropertySlice(self):
+        """SchemaListProperty slice methods
+        """
+        class A(DocumentSchema):
+            s = StringProperty()
+            
+        class B(Document):
+            slm = SchemaListProperty(A)
+
+        b = B()
+        a1 = A()
+        a1.s = 'test1'
+        a2 = A()
+        a2.s = 'test2'
+        a3 = A()
+        a3.s = 'test3'
+        b.slm[0:1] = [a1, a2]
+        self.assertEqual(len(b.slm), 2)
+        self.assertEqual([b.slm[0].s, b.slm[1].s], [a1.s, a2.s])
+        self.assertEqual(b._doc, {
+            'doc_type': 'B',
+            'slm': [{'doc_type': 'A', 's': unicode(a1.s)},
+                    {'doc_type': 'A', 's': unicode(a2.s)}]
+        })
+        b.slm.append(a3)
+        c = b.slm[1:3]
+        self.assertEqual(len(c), 2)
+        self.assertEqual([c[0].s, c[1].s], [a2.s, a3.s])
+        del b.slm[1:3]
+        self.assertEqual(len(b.slm), 1)
+        self.assertEqual(b.slm[0].s, a1.s)
+        self.assertEqual(b._doc, {
+            'doc_type': 'B',
+            'slm': [{'doc_type': 'A', 's': unicode(a1.s)}]
+        })
         
 
     def testSchemaDictProperty(self):

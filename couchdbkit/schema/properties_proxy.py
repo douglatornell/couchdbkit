@@ -207,6 +207,18 @@ class LazySchemaList(list):
                                     self.use_instance)
         list.__setitem__(self, index, value)
 
+    def __delslice__(self, i, j):
+        del self.doc[i:j]
+        super(LazySchemaList, self).__delslice__(i, j)
+
+    def __getslice__(self, i, j):
+        return LazySchemaList(self.doc[i:j], self.schema, self.use_instance)
+
+    def __setslice__(self, i, j, seq):
+        self.doc[i:j] = (svalue_to_json(v, self.schema, self.use_instance)
+                         for v in seq)
+        super(LazySchemaList, self).__setslice__(i, j, seq)
+
     def append(self, *args, **kwargs):
         if args:
             assert len(args) == 1
