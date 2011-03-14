@@ -235,6 +235,14 @@ class LazySchemaList(list):
         self.doc.append(svalue_to_json(value, self.schema, 
                                     self.use_instance))
         super(LazySchemaList, self).append(value)
+
+    def count(self, value):
+        return sum(1 for item in self.doc if item == value._doc)
+
+    def extend(self, x):
+        self.doc.extend([svalue_to_json(item, self.schema, self.use_instance)
+                         for item in x])
+        super(LazySchemaList, self).extend(x)
         
         
 class SchemaDictProperty(Property):

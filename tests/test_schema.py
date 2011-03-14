@@ -1033,6 +1033,49 @@ class PropertyTestCase(unittest.TestCase):
         self.assertTrue(a1 in b.slm)
         self.assertFalse(a2 in b.slm)
 
+
+    def testSchemaListPropertyCount(self):
+        """SchemaListProperty count method
+        """
+        class A(DocumentSchema):
+            s = StringProperty()
+            
+        class B(Document):
+            slm = SchemaListProperty(A)
+
+        b = B()
+        a1 = A()
+        a1.s = 'test1'
+        a2 = A()
+        a2.s = 'test2'
+        b.slm = [a1, a2, a1]
+        self.assertEqual(b.slm.count(a1), 2)
+
+
+    def testSchemaListPropertyExtend(self):
+        """SchemaListProperty extend method
+        """
+        class A(DocumentSchema):
+            s = StringProperty()
+            
+        class B(Document):
+            slm = SchemaListProperty(A)
+
+        b = B()
+        a1 = A()
+        a1.s = 'test1'
+        a2 = A()
+        a2.s = 'test2'
+        b.slm.extend([a1, a2])
+        self.assertEqual(len(b.slm), 2)
+        self.assertEqual([b.slm[0].s, b.slm[1].s], [a1.s, a2.s])
+        self.assertEqual(b._doc, {
+            'doc_type': 'B',
+            'slm': [{'doc_type': 'A', 's': unicode(a1.s)},
+                    {'doc_type': 'A', 's': unicode(a2.s)}]
+        })
+
+
     def testSchemaDictProperty(self):
         class A(DocumentSchema):
             i = IntegerProperty()
