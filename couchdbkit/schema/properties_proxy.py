@@ -243,6 +243,23 @@ class LazySchemaList(list):
         self.doc.extend([svalue_to_json(item, self.schema, self.use_instance)
                          for item in x])
         super(LazySchemaList, self).extend(x)
+
+    def index(self, value, *args):
+        try:
+            i = max(0, args[0])
+        except IndexError:
+            i = 0
+        try:
+            j = min(len(self.doc), args[1])
+        except IndexError:
+            j = len(self.doc)
+        if j < 0:
+            j += len(self.doc)
+        for idx, item in enumerate(self.doc[i:j]):
+            if item == value._doc:
+                return idx + i
+        else:
+            raise ValueError('list.index(x): x not in list')
         
         
 class SchemaDictProperty(Property):

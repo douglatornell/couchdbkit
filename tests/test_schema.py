@@ -7,7 +7,10 @@ __author__ = 'benoitc@e-engura.com (Benoît Chesneau)'
 
 import datetime
 import decimal
-import unittest
+try:
+    import unittest2 as unittest
+except ImportError:
+    import unittest
 
 from couchdbkit import *
 
@@ -1074,6 +1077,32 @@ class PropertyTestCase(unittest.TestCase):
             'slm': [{'doc_type': 'A', 's': unicode(a1.s)},
                     {'doc_type': 'A', 's': unicode(a2.s)}]
         })
+
+
+    def testSchemaListPropertyIndex(self):
+        """SchemaListProperty index method
+        """
+        class A(DocumentSchema):
+            s = StringProperty()
+            
+        class B(Document):
+            slm = SchemaListProperty(A)
+
+        b = B()
+        a1 = A()
+        a1.s = 'test1'
+        a2 = A()
+        a2.s = 'test2'
+        a3 = A()
+        a3.s = 'test3'
+        b.slm = [a1, a2, a1, a2, a1]
+        self.assertEqual(b.slm.index(a1), 0)
+        self.assertEqual(b.slm.index(a2, 2), 3)
+        self.assertEqual(b.slm.index(a1, 1, 3), 2)
+        self.assertEqual(b.slm.index(a1, 1, -2), 2)
+        with self.assertRaises(ValueError) as cm:
+            b.slm.index(a3)
+        self.assertEqual(str(cm.exception), 'list.index(x): x not in list')
 
 
     def testSchemaDictProperty(self):
