@@ -7,10 +7,7 @@ __author__ = 'benoitc@e-engura.com (Benoît Chesneau)'
 
 import datetime
 import decimal
-try:
-    import unittest2 as unittest
-except ImportError:
-    import unittest
+import unittest
 
 from couchdbkit import *
 
@@ -1134,6 +1131,42 @@ class PropertyTestCase(unittest.TestCase):
         self.assert_(a._doc == {
             'doc_type': 'A',
             'l': [d1.strftime(fstring), d2.strftime(fstring)]
+        })
+
+
+    def testListPropertyInsert(self):
+        """list insert method for property w/o type
+        """
+        class A(Document):
+            l = ListProperty()
+
+        a = A()
+        a.l = [42, 24]
+        a.l.insert(1, 4224)
+        self.assertEqual(a.l, [42, 4224, 24])
+        self.assertEqual(a._doc, {'doc_type': 'A', 'l': [42, 4224, 24]})
+
+
+    def testListPropertyInsertWithType(self):
+        """list insert method for property w/ type
+        """
+        from datetime import datetime
+        class A(Document):
+            l = ListProperty(item_type=datetime)
+
+        a = A()
+        d1 = datetime(2011, 3, 11, 21, 31, 1)
+        d2 = datetime(2011, 11, 3, 13, 12, 2)
+        d3 = datetime(2010, 1, 12, 3, 2, 3)
+        a.l = [d1, d3]
+        a.l.insert(1, d2)
+        self.assertEqual(a.l, [d1, d2, d3])
+        fstring = '%Y-%m-%dT%H:%M:%SZ'
+        self.assertEqual(a._doc, {
+            'doc_type': 'A',
+            'l': [d1.strftime(fstring),
+                  d2.strftime(fstring),
+                  d3.strftime(fstring)]
         })
 
 
