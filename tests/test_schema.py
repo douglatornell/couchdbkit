@@ -1013,7 +1013,25 @@ class PropertyTestCase(unittest.TestCase):
             'doc_type': 'B',
             'slm': [{'doc_type': 'A', 's': unicode(a1.s)}]
         })
-        
+
+
+    def testSchemaListPropertyContains(self):
+        """SchemaListProperty contains method
+        """
+        class A(DocumentSchema):
+            s = StringProperty()
+            
+        class B(Document):
+            slm = SchemaListProperty(A)
+
+        b = B()
+        a1 = A()
+        a1.s = 'test1'
+        a2 = A()
+        a2.s = 'test2'
+        b.slm = [a1]
+        self.assertTrue(a1 in b.slm)
+        self.assertFalse(a2 in b.slm)
 
     def testSchemaDictProperty(self):
         class A(DocumentSchema):

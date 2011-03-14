@@ -219,6 +219,12 @@ class LazySchemaList(list):
                          for v in seq)
         super(LazySchemaList, self).__setslice__(i, j, seq)
 
+    def __contains__(self, value):
+        for item in self.doc:
+            if item == value._doc:
+                return True
+        return False
+
     def append(self, *args, **kwargs):
         if args:
             assert len(args) == 1
