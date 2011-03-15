@@ -1221,6 +1221,44 @@ class PropertyTestCase(unittest.TestCase):
         })
 
 
+    def testSchemaListPropertySort(self):
+        """SchemaListProperty sort method
+        """
+        class A(DocumentSchema):
+            s = StringProperty()
+            
+        class B(Document):
+            slm = SchemaListProperty(A)
+
+        b = B()
+        a1 = A()
+        a1.s = 'test1'
+        a2 = A()
+        a2.s = 'test2'
+        b.slm = [a2, a1]
+        b.slm.sort(key=lambda item: item['s'])
+        self.assertEqual([b.slm[0].s, b.slm[1].s], [a1.s, a2.s])
+        self.assertEqual(b._doc, {
+            'doc_type': 'B',
+            'slm': [{'doc_type': 'A', 's': unicode(a1.s)},
+                    {'doc_type': 'A', 's': unicode(a2.s)}]
+        })
+        b.slm.sort(key=lambda item: item['s'], reverse=True)
+        self.assertEqual([b.slm[0].s, b.slm[1].s], [a2.s, a1.s])
+        self.assertEqual(b._doc, {
+            'doc_type': 'B',
+            'slm': [{'doc_type': 'A', 's': unicode(a2.s)},
+                    {'doc_type': 'A', 's': unicode(a1.s)}]
+        })
+        b.slm.sort(cmp=lambda x, y: cmp(x['s'].lower(), y['s'].lower()))
+        self.assertEqual([b.slm[0].s, b.slm[1].s], [a1.s, a2.s])
+        self.assertEqual(b._doc, {
+            'doc_type': 'B',
+            'slm': [{'doc_type': 'A', 's': unicode(a1.s)},
+                    {'doc_type': 'A', 's': unicode(a2.s)}]
+        })
+
+
     def testSchemaDictProperty(self):
         class A(DocumentSchema):
             i = IntegerProperty()

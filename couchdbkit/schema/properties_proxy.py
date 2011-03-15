@@ -277,6 +277,10 @@ class LazySchemaList(list):
     def reverse(self):
         self.doc.reverse()
         list.reverse(self)
+
+    def sort(self, cmp=None, key=None, reverse=False):
+        self.doc.sort(cmp, key, reverse)
+        list.sort(self, cmp, key, reverse)
         
         
 class SchemaDictProperty(Property):
