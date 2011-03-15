@@ -1408,10 +1408,9 @@ class PropertyTestCase(unittest.TestCase):
         d2 = datetime(2011, 11, 3, 13, 12, 2)
         a.l.extend([d1, d2])
         self.assert_(a.l == [d1, d2])
-        fstring = '%Y-%m-%dT%H:%M:%SZ'
         self.assert_(a._doc == {
             'doc_type': 'A',
-            'l': [d1.strftime(fstring), d2.strftime(fstring)]
+            'l': ['2011-03-11T21:31:01Z', '2011-11-03T13:12:02Z']
         })
 
 
@@ -1442,12 +1441,11 @@ class PropertyTestCase(unittest.TestCase):
         a.l = [d1, d3]
         a.l.insert(1, d2)
         self.assertEqual(a.l, [d1, d2, d3])
-        fstring = '%Y-%m-%dT%H:%M:%SZ'
         self.assertEqual(a._doc, {
             'doc_type': 'A',
-            'l': [d1.strftime(fstring),
-                  d2.strftime(fstring),
-                  d3.strftime(fstring)]
+            'l': ['2011-03-11T21:31:01Z',
+                  '2011-11-03T13:12:02Z',
+                  '2010-01-12T03:02:03Z']
         })
 
 
