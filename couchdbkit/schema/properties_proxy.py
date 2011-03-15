@@ -260,6 +260,23 @@ class LazySchemaList(list):
                 return idx + i
         else:
             raise ValueError('list.index(x): x not in list')
+
+    def insert(self, index, value):
+        self.__setslice__(index, index, [value])
+
+    def pop(self, index=-1):
+        del self.doc[index]
+        return super(LazySchemaList, self).pop(index)
+
+    def remove(self, value):
+        try:
+            del self[self.index(value)]
+        except ValueError:
+            raise ValueError('list.remove(x): x not in list')
+
+    def reverse(self):
+        self.doc.reverse()
+        list.reverse(self)
         
         
 class SchemaDictProperty(Property):

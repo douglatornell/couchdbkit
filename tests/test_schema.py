@@ -1105,6 +1105,122 @@ class PropertyTestCase(unittest.TestCase):
         self.assertEqual(str(cm.exception), 'list.index(x): x not in list')
 
 
+    def testSchemaListPropertyInsert(self):
+        """SchemaListProperty insert method
+        """
+        class A(DocumentSchema):
+            s = StringProperty()
+            
+        class B(Document):
+            slm = SchemaListProperty(A)
+
+        b = B()
+        a1 = A()
+        a1.s = 'test1'
+        a2 = A()
+        a2.s = 'test2'
+        a3 = A()
+        a3.s = 'test3'
+        b.slm = [a1, a3]
+        b.slm.insert(1, a2)
+        self.assertEqual(len(b.slm), 3)
+        self.assertEqual(
+            [b.slm[0].s, b.slm[1].s, b.slm[2].s], [a1.s, a2.s, a3.s])
+        self.assertEqual(b._doc, {
+            'doc_type': 'B',
+            'slm': [{'doc_type': 'A', 's': unicode(a1.s)},
+                    {'doc_type': 'A', 's': unicode(a2.s)},
+                    {'doc_type': 'A', 's': unicode(a3.s)}]
+        })
+
+
+    def testSchemaListPropertyPop(self):
+        """SchemaListProperty pop method
+        """
+        class A(DocumentSchema):
+            s = StringProperty()
+            
+        class B(Document):
+            slm = SchemaListProperty(A)
+
+        b = B()
+        a1 = A()
+        a1.s = 'test1'
+        a2 = A()
+        a2.s = 'test2'
+        a3 = A()
+        a3.s = 'test3'
+        b.slm = [a1, a2, a3]
+        v = b.slm.pop()
+        self.assertEqual(v.s, a3.s)
+        self.assertEqual(len(b.slm), 2)
+        self.assertEqual([b.slm[0].s, b.slm[1].s], [a1.s, a2.s])
+        self.assertEqual(b._doc, {
+            'doc_type': 'B',
+            'slm': [{'doc_type': 'A', 's': unicode(a1.s)},
+                    {'doc_type': 'A', 's': unicode(a2.s)}]
+        })
+        v = b.slm.pop(0)
+        self.assertEqual(v.s, a1.s)
+        self.assertEqual(len(b.slm), 1)
+        self.assertEqual(b.slm[0].s, a2.s)
+        self.assertEqual(b._doc, {
+            'doc_type': 'B',
+            'slm': [{'doc_type': 'A', 's': unicode(a2.s)}]
+        })
+
+
+    def testSchemaListPropertyRemove(self):
+        """SchemaListProperty remove method
+        """
+        class A(DocumentSchema):
+            s = StringProperty()
+            
+        class B(Document):
+            slm = SchemaListProperty(A)
+
+        b = B()
+        a1 = A()
+        a1.s = 'test1'
+        a2 = A()
+        a2.s = 'test2'
+        b.slm = [a1, a2]
+        b.slm.remove(a1)
+        self.assertEqual(len(b.slm), 1)
+        self.assertEqual(b.slm[0].s, a2.s)
+        self.assertEqual(b._doc, {
+            'doc_type': 'B',
+            'slm': [{'doc_type': 'A', 's': unicode(a2.s)}]
+        })
+        with self.assertRaises(ValueError) as cm:
+            b.slm.remove(a1)
+        self.assertEqual(str(cm.exception), 'list.remove(x): x not in list')
+
+
+    def testSchemaListPropertyReverse(self):
+        """SchemaListProperty reverse method
+        """
+        class A(DocumentSchema):
+            s = StringProperty()
+            
+        class B(Document):
+            slm = SchemaListProperty(A)
+
+        b = B()
+        a1 = A()
+        a1.s = 'test1'
+        a2 = A()
+        a2.s = 'test2'
+        b.slm = [a1, a2]
+        b.slm.reverse()
+        self.assertEqual([b.slm[0].s, b.slm[1].s], [a2.s, a1.s])
+        self.assertEqual(b._doc, {
+            'doc_type': 'B',
+            'slm': [{'doc_type': 'A', 's': unicode(a2.s)},
+                    {'doc_type': 'A', 's': unicode(a1.s)}]
+        })
+
+
     def testSchemaDictProperty(self):
         class A(DocumentSchema):
             i = IntegerProperty()
